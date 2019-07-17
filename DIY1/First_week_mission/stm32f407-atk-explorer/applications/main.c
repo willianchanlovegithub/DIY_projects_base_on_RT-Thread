@@ -74,7 +74,7 @@ int main(void)
     rt_thread_t ds18b20_thread, led_thread;
     
     ds18b20_thread = rt_thread_create("18b20tem", read_temp_entry, "temp_ds18b20",
-                                      512, RT_THREAD_PRIORITY_MAX / 2, 20);
+                                      640, RT_THREAD_PRIORITY_MAX / 2, 20);
     if (ds18b20_thread != RT_NULL)
     {
         rt_thread_startup(ds18b20_thread);
