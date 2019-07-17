@@ -180,11 +180,11 @@ int32_t ds18b20_get_temperature(rt_base_t pin)
 
 static rt_size_t _ds18b20_polling_get_data(rt_sensor_t sensor, struct rt_sensor_data *data)
 {
-    rt_int32_t temperature_x100;
+    rt_int32_t temperature_x10;
     if (sensor->info.type == RT_SENSOR_CLASS_TEMP)
     {
-        temperature_x100 = ds18b20_get_temperature((rt_base_t)sensor->config.intf.user_data);
-        data->data.temp = temperature_x100;
+        temperature_x10 = ds18b20_get_temperature((rt_base_t)sensor->config.intf.user_data);
+        data->data.temp = temperature_x10;
         data->timestamp = rt_sensor_get_ts();
     }    
     return 1;
