@@ -20,6 +20,8 @@ if GetDepend(['BSP_USING_SPI_FLASH']):
 
 if GetDepend(['BSP_USING_SDCARD']):
     src += Glob('ports/sdcard_port.c')
+    
+src += Glob('ports/sensor_dallas_ds18b20.c')
 
 path =  [cwd]
 path += [cwd + '/CubeMX_Config/Inc']
