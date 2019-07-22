@@ -10,6 +10,7 @@
  * 2019-07-15     WillianCham  DIY Demo(First week mission)
  */
 
+#include <stdlib.h>
 #include <rtthread.h>
 #include <rtdevice.h>
 #include <board.h>
@@ -50,7 +51,20 @@ static void read_temp_entry(void *parameter)
         }
         else
         {
-            rt_kprintf("temp:%3d.%dC, timestamp:%5d\n", sensor_data.data.temp / 10, sensor_data.data.temp % 10, sensor_data.timestamp);
+            if (sensor_data.data.temp >= 0)
+            {
+                rt_kprintf("temp:%3d.%dC, timestamp:%5d\n",
+                           sensor_data.data.temp / 10,
+                           sensor_data.data.temp % 10,
+                           sensor_data.timestamp);
+            }
+            else
+            {
+                rt_kprintf("temp:-%2d.%dC, timestamp:%5d\n",
+                           abs(sensor_data.data.temp) / 10,
+                           abs(sensor_data.data.temp) % 10,
+                           sensor_data.timestamp);
+            }
         }
         rt_thread_mdelay(100);
     }
