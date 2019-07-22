@@ -116,7 +116,7 @@ static void ds18b20_write_byte(rt_base_t pin, uint8_t dat)
         if(testb)
         {
             rt_pin_write(pin, PIN_LOW);
-            rt_hw_us_delay(1);
+            rt_hw_us_delay(2);
             rt_pin_write(pin, PIN_HIGH);
             rt_hw_us_delay(60);
         }
@@ -125,7 +125,7 @@ static void ds18b20_write_byte(rt_base_t pin, uint8_t dat)
             rt_pin_write(pin, PIN_LOW);
             rt_hw_us_delay(60);
             rt_pin_write(pin, PIN_HIGH);
-            rt_hw_us_delay(1);
+            rt_hw_us_delay(2);
         }
     }
 }
@@ -159,20 +159,21 @@ int32_t ds18b20_get_temperature(rt_base_t pin)
     ds18b20_write_byte(pin, 0xbe);
     TL = ds18b20_read_byte(pin);    /* LSB first */
     TH = ds18b20_read_byte(pin);
-
-    tem = TH;
-    tem <<= 8;
-    tem |= TL;
-    
-    if(tem < 0)
+    if (TH > 7)
     {
-        tem = tem - 1;
-        tem = ~tem;
+        TH =~ TH;
+        TL =~ TL;
+        tem = TH;
+        tem <<= 8;
+        tem += TL;
         tem = (int32_t)(tem * 0.0625 * 10 + 0.5);
         return -tem;
     }
     else
     {
+        tem = TH;
+        tem <<= 8;
+        tem += TL;
         tem = (int32_t)(tem * 0.0625 * 10 + 0.5);
         return tem;
     }
