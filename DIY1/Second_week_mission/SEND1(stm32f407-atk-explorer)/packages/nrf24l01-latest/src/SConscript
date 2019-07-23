@@ -1,0 +1,10 @@
+from building import *
+Import('rtconfig')
+
+cwd     = GetCurrentDir()
+src	= Glob('*.c')
+path = [cwd]
+
+group = DefineGroup('nRF24L01', src, depend = ['PKG_USING_NRF24L01'], CPPPATH = path)
+
+Return('group')
