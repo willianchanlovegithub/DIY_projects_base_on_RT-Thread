@@ -76,7 +76,8 @@ static uint8_t ds18b20_read_bit(rt_base_t pin)
     rt_hw_us_delay(2);
     rt_pin_write(pin, PIN_HIGH);
     rt_pin_mode(pin, PIN_MODE_INPUT);
-    rt_hw_us_delay(12);
+    /* maybe 12us, maybe 5us, whatever...I have no idea */
+    rt_hw_us_delay(5);
 
     if(rt_pin_read(pin))
         data = 1;
