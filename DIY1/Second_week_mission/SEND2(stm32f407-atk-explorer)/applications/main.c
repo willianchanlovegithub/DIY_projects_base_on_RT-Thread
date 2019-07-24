@@ -101,26 +101,16 @@ static void nrf24l01_send_entry(void *parameter)
         {
             if (msg.int_value >= 0)
             {
-                rt_kprintf("temp = +%3d.%dC, timestamp = %d\n",
-                           msg.int_value / 10,
-                           msg.int_value % 10,
-                           msg.timestamp);
-                tbuf[0] = '+';
+                rt_sprintf((char *)tbuf, "temp:+%3d.%dC, ts:%d",
+                           msg.int_value / 10, msg.int_value % 10, msg.timestamp);
             }
             else
             {
-                rt_kprintf("temp = -%2d.%dC, timestamp = %d\n",
-                           abs(msg.int_value) / 10,
-                           abs(msg.int_value) % 10,
-                           msg.timestamp);
-                tbuf[0] = '-';
+                rt_sprintf((char *)tbuf, "temp:-%2d.%dC, ts:%d",
+                           msg.int_value / 10, msg.int_value % 10, msg.timestamp);
             }
-            tbuf[1] = msg.int_value / 1000 + '0';
-            tbuf[2] = msg.int_value % 1000 / 100 + '0';
-            tbuf[3] = msg.int_value % 100 / 10 + '0';
-            tbuf[4] = '.';
-            tbuf[5] = msg.int_value % 10 + '0';
-            tbuf[6] = 'C';
+            rt_kputs((char *)tbuf);
+            rt_kputs("\n");
         }
         if (nrf24_ptx_run(rbuf, tbuf, rt_strlen((char *)tbuf)) < 0)
         {
