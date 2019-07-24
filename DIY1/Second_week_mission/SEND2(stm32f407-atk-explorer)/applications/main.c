@@ -8,7 +8,7 @@
  * 2018-11-06     SummerGift   first version
  * 2018-11-19     flybreak     add stm32f407-atk-explorer bsp
  * 2019-07-15     WillianCham  DIY Demo1(First week mission)
- * 2019-07-18     WillianChan  DIY Demo2(Second week mission)
+ * 2019-07-23     WillianChan  DIY Demo2(Second week mission)
  */
 
 #include <rtthread.h>
@@ -25,10 +25,23 @@
 #define NRF24_IRQ_PIN       GET_PIN(G, 8)
 #define NRF24L01_SPI_DEVICE "spi10"
 
+#define MQ_BLOCK_SIZE       RT_ALIGN(sizeof(struct tmp_msg), sizeof(intptr_t)) /* 为了字节对齐 */
+#define MQ_LEN              (4)
+
+struct tmp_msg
+{
+    rt_tick_t timestamp;
+    char str_value[8];
+    int int_value;
+    float float_value;
+};
+static rt_mq_t tmp_msg_mq;
+static struct rt_sensor_data sensor_data;
+
 static void read_temp_entry(void *parameter)
 {
+    struct tmp_msg msg;
     rt_device_t dev = RT_NULL;
-    struct rt_sensor_data sensor_data;
     rt_size_t res;
 
     dev = rt_device_find(parameter);
@@ -56,20 +69,9 @@ static void read_temp_entry(void *parameter)
         }
         else
         {
-            if (sensor_data.data.temp >= 0)
-            {
-                rt_kprintf("temp:%3d.%dC, timestamp:%5d\n",
-                       sensor_data.data.temp / 10,
-                       sensor_data.data.temp % 10,
-                       sensor_data.timestamp);
-            }
-            else
-            {
-                rt_kprintf("temp:-%2d.%dC, timestamp:%5d\n",
-                       abs(sensor_data.data.temp / 10),
-                       abs(sensor_data.data.temp % 10),
-                       sensor_data.timestamp);
-            }
+            msg.timestamp = sensor_data.timestamp;
+            msg.int_value = sensor_data.data.temp;
+            rt_mq_send(tmp_msg_mq, &msg, sizeof msg);
         }
         rt_thread_mdelay(100);
     }
@@ -77,12 +79,11 @@ static void read_temp_entry(void *parameter)
 
 static void nrf24l01_send_entry(void *parameter)
 {
+    struct tmp_msg msg;
     struct hal_nrf24l01_port_cfg halcfg;
     nrf24_cfg_t cfg;
-    int rlen;
-    uint8_t rbuf[32 + 1];
-    uint8_t tbuf[32] = "\nStart Sending\n";
-    uint32_t cnt = 0;
+    uint8_t rbuf[32 + 1] = {0};
+    uint8_t tbuf[32] = {0};
 
     nrf24_default_param(&cfg);
     halcfg.ce_pin = NRF24L01_CE_PIN;
@@ -96,14 +97,34 @@ static void nrf24l01_send_entry(void *parameter)
     {
         rt_thread_mdelay(100);
         
-        rlen = nrf24_ptx_run(rbuf, tbuf, rt_strlen((char *)tbuf));
-        if (rlen >= 0)
+        if (rt_mq_recv(tmp_msg_mq, &msg, sizeof msg, RT_WAITING_FOREVER) == RT_EOK)
         {
-            rt_sprintf((char *)tbuf, "i-am-PTX_2:%dth\r\n", cnt++);
+            if (msg.int_value >= 0)
+            {
+                rt_kprintf("temp = +%3d.%dC, timestamp = %d\n",
+                           msg.int_value / 10,
+                           msg.int_value % 10,
+                           msg.timestamp);
+                tbuf[0] = '+';
+            }
+            else
+            {
+                rt_kprintf("temp = -%2d.%dC, timestamp = %d\n",
+                           abs(msg.int_value) / 10,
+                           abs(msg.int_value) % 10,
+                           msg.timestamp);
+                tbuf[0] = '-';
+            }
+            tbuf[1] = msg.int_value / 1000 + '0';
+            tbuf[2] = msg.int_value % 1000 / 100 + '0';
+            tbuf[3] = msg.int_value % 100 / 10 + '0';
+            tbuf[4] = '.';
+            tbuf[5] = msg.int_value % 10 + '0';
+            tbuf[6] = 'C';
         }
-        else
+        if (nrf24_ptx_run(rbuf, tbuf, rt_strlen((char *)tbuf)) < 0)
         {
-            rt_kputs("Send data failed\r\n");            
+            rt_kputs("Send failed! >>> ");
         }
     }
 }
@@ -124,6 +145,8 @@ static void led_shine_entry(void *parameter)
 int main(void)
 {
     rt_thread_t ds18b20_thread, led_thread, nrf24l01_thread;
+    
+    tmp_msg_mq = rt_mq_create("temp_mq", MQ_BLOCK_SIZE, MQ_LEN, RT_IPC_FLAG_FIFO);
     
     ds18b20_thread = rt_thread_create("18b20tem", read_temp_entry, "temp_ds18b20",
                                       640, RT_THREAD_PRIORITY_MAX / 2, 20);
