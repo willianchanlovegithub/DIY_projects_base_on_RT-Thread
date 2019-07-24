@@ -6,7 +6,7 @@
  * Change Logs:
  * Date           Author       Notes
  * 2018-11-06     SummerGift   first version
- * 2019-07-18     WillianChan  DIY Demo2(Second week mission)
+ * 2019-07-23     WillianChan  DIY Demo2(Second week mission)
  */
 
 #include <rtthread.h>
@@ -46,12 +46,12 @@ static void nrf24l01_receive_entry(void *parameter)
         
         if (!rx_pipe_num_choose())
         {
-            rt_kputs((char *)RxBuf_P0);
-            rt_kputs((char *)RxBuf_P1);
-            rt_kputs((char *)RxBuf_P2);
-            rt_kputs((char *)RxBuf_P3);
-            rt_kputs((char *)RxBuf_P4);
-            rt_kputs((char *)RxBuf_P5);
+            rt_kprintf("nrf24l01 pipe1 data:%s\n", &RxBuf_P0);
+            rt_kprintf("nrf24l01 pipe2 data:%s\n", &RxBuf_P1);
+            rt_kprintf("nrf24l01 pipe3 data:%s\n", &RxBuf_P2);
+            rt_kprintf("nrf24l01 pipe4 data:%s\n", &RxBuf_P3);
+            rt_kprintf("nrf24l01 pipe5 data:%s\n", &RxBuf_P4);
+            rt_kprintf("nrf24l01 pipe6 data:%s\n", &RxBuf_P5);
             rt_kputs("\n");
         }
     }
