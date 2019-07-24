@@ -6,8 +6,23 @@
 
 ## 备注
 
-这是个的半成品
+- 第二周的 demo 工程中，ds18b20_thread 与 nrf24l01_thread 这两个线程之间的通信使用了 IPC 中的消息队列
+- 因其他原因，公众号推文推迟到明天推送，请见谅。
 
 ## 结果
 
-这是个的半成品
+如下图所示：
+
+![board](figures/result.jpg)
+
+
+
+好像看不太清。。。放大一下吧：
+- 发送节点1数据：
+![board](figures/pipe1_data.jpg)
+- 发送节点2数据：
+![board](figures/pipe2_data.jpg)
+- 发送节点3数据：
+![board](figures/pipe3_data.jpg)
+- 接收节点数据：
+![board](figures/recv.jpg)
