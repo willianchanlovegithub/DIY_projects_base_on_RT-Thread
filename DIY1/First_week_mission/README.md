@@ -309,7 +309,7 @@ RT-Thread Components  --->
 
 - 打开之后，需要使用 `scons --target=mdk5` 更新工程即可。看，Sensor 框架加入到工程当中了：
 
-![board](figures/sensor in project.jpg)
+![board](figures/sensor_in_project.jpg)
 
 - `stm32f407-atk-explorer` 文件夹里面的工程就是第一周的任务
 - 是基于正点原子的探索者开发板的 BSP 制作的，手头有这款开发板的可以直接打开工程编译下载即可。使用其他开发板的，如果已经有 BSP 支持的，可以直接使用对应的 BSP 来做，并将 `stm32f407-atk-explorer\board\ports` 文件夹中的 `sensor_dallas_ds18b20.c` 文件引入到自己的工程当中即可。其余开发板，可以参考该 Demo 程序，照葫芦画瓢。
