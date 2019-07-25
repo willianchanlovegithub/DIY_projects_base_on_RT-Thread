@@ -36,7 +36,7 @@
 
 软件包可以通过 env 工具十分方便的获取到，并且加载到工程里面去，env 工具的下载链接可以在官网找到，[env 下载链接](https://www.rt-thread.org/page/download.html)。env 的使用方法可以查看[这里](https://www.rt-thread.org/document/site/tutorial/env-video/)进行学习。
 
-![board](figures/env download1.jpg)
+![board](figures/env_download1.jpg)
 
 值得注意的是，在 env 中获取软件包是需要依赖于 git 的，可以去 git 官网获得下载，[git 官网链接](https://git-scm.com/)
 
@@ -54,7 +54,7 @@ RT-Thread online packages  --->
 
 不过该软件包现在仅仅只是获取到本地，尚未加载到 MDK 工程当中来。我们在 env 中输入 `scons --target=mdk5` 命令回车即可，执行完该命令之后打开 MDK5 工程，发现 nrf24l01 软件包成功加载到工程里面去了，如下图所示：
 
-![board](figures/mdk project.jpg)
+![board](figures/mdk_project.jpg)
 
 ## 3. IPC 之邮箱实战指南
 
