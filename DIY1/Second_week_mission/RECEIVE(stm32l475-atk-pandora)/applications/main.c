@@ -46,12 +46,12 @@ static void nrf24l01_receive_entry(void *parameter)
         
         if (!rx_pipe_num_choose())
         {
-            rt_kprintf("nrf24l01 pipe1 data:%s\n", &RxBuf_P0);
-            rt_kprintf("nrf24l01 pipe2 data:%s\n", &RxBuf_P1);
-            rt_kprintf("nrf24l01 pipe3 data:%s\n", &RxBuf_P2);
-            rt_kprintf("nrf24l01 pipe4 data:%s\n", &RxBuf_P3);
-            rt_kprintf("nrf24l01 pipe5 data:%s\n", &RxBuf_P4);
-            rt_kprintf("nrf24l01 pipe6 data:%s\n", &RxBuf_P5);
+            rt_kprintf("nrf24l01 pipe0 data:%s\n", &RxBuf_P0);
+            rt_kprintf("nrf24l01 pipe1 data:%s\n", &RxBuf_P1);
+            rt_kprintf("nrf24l01 pipe2 data:%s\n", &RxBuf_P2);
+            rt_kprintf("nrf24l01 pipe3 data:%s\n", &RxBuf_P3);
+            rt_kprintf("nrf24l01 pipe4 data:%s\n", &RxBuf_P4);
+            rt_kprintf("nrf24l01 pipe5 data:%s\n", &RxBuf_P5);
             rt_kputs("\n");
         }
     }
