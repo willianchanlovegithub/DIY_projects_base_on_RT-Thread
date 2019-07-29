@@ -100,13 +100,11 @@ static void nrf24l01_send_entry(void *parameter)
         {
             if (msg.int_value >= 0)
             {
-                rt_sprintf((char *)tbuf, "temp:+%3d.%dC, ts:%d",
-                           msg.int_value / 10, msg.int_value % 10, msg.timestamp);
+                rt_sprintf((char *)tbuf, "%d,+%3d.%d", msg.timestamp, msg.int_value / 10, msg.int_value % 10);
             }
             else
             {
-                rt_sprintf((char *)tbuf, "temp:-%2d.%dC, ts:%d",
-                           msg.int_value / 10, msg.int_value % 10, msg.timestamp);
+                rt_sprintf((char *)tbuf, "%d,-%2d.%d", msg.timestamp, msg.int_value / 10, msg.int_value % 10);
             }
             rt_kputs((char *)tbuf);
             rt_kputs("\n");
