@@ -1,0 +1,7 @@
+[
+ {
+  "path": "/packages/peripherals/nrf24l01", 
+  "ver": "latest", 
+  "name": "NRF24L01"
+ }
+]
