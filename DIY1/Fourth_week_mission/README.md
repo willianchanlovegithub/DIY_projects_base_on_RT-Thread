@@ -8,11 +8,15 @@
 
 ![board](figures/zxy.png)
 
-## 初版测试结果
+## 结果
 
-- 在网页上查看 OneNet 云端数据，能正常收到了： 
+- 在网页上查看 OneNet 云端数据，能正常收到来自每个发送节点数据流了： 
 
 ![board](figures/onenetdata.png)
+
+- OneNet 应用，可实现远程监控：
+
+![board](figures/onenetapp.png)
 
 - 本地 FinSH 信息输出：
 
