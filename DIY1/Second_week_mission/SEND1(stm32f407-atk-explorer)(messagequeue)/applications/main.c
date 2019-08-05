@@ -73,7 +73,7 @@ static void read_temp_entry(void *parameter)
             msg.int_value = sensor_data.data.temp;
             rt_mq_send(tmp_msg_mq, &msg, sizeof msg);
         }
-        rt_thread_mdelay(100);
+        rt_thread_mdelay(500);
     }
 }
 
@@ -95,7 +95,7 @@ static void nrf24l01_send_entry(void *parameter)
 
     while (1)
     {
-        rt_thread_mdelay(100);
+        rt_thread_mdelay(500);
         
         if (rt_mq_recv(tmp_msg_mq, &msg, sizeof msg, RT_WAITING_FOREVER) == RT_EOK)
         {

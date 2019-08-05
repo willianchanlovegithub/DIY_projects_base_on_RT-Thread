@@ -79,7 +79,7 @@ static void read_temp_entry(void *parameter)
             rt_mb_send(tmp_msg_mb, (rt_ubase_t)msg);
             msg = NULL;
         }
-        rt_thread_mdelay(100);
+        rt_thread_mdelay(500);
     }
 }
 
@@ -101,7 +101,7 @@ static void nrf24l01_send_entry(void *parameter)
 
     while (1)
     {
-        rt_thread_mdelay(100);
+        rt_thread_mdelay(500);
         
         if (rt_mb_recv(tmp_msg_mb, (rt_ubase_t*)&msg, RT_WAITING_FOREVER) == RT_EOK)
         {
