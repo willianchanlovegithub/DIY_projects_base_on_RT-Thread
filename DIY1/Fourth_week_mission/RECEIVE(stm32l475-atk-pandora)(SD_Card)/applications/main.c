@@ -8,8 +8,7 @@
  * 2018-11-06     SummerGift   first version
  * 2019-07-23     WillianChan  DIY Demo2(Second week mission)
  * 2019-07-30     WillianChan  DIY Demo3(Third week mission)
- * 2019-08-01     WillianChan  DIY Demo4(Fourth week mission)³ûÐÎ°æ±¾£¡£¡£¡²Ý¸å°æ±¾£¡£¡£¡Ê²Ã´¶¼²»ÒªÏàÐÅ£¡£¡£¡
- * 2019-08-01     WillianChan  Say again£º³ûÐÎ°æ±¾£¡£¡£¡²Ý¸å°æ±¾£¡£¡£¡Ê²Ã´¶¼²»ÒªÏàÐÅ£¡£¡£¡
+ * 2019-08-05     WillianChan  DIY Demo4(Fourth week mission)
  */
 
 #include <rtthread.h>
@@ -27,11 +26,16 @@
 #define NRF24_IRQ_PIN       GET_PIN(D, 3)
 #define NRF24L01_SPI_DEVICE "spi20"
 #define WRITE_EVENT         (0x01U << 0)            /* ¸ÐÐËÈ¤µÄÊÂ¼þ */
-#define RINGBUFFERSIZE      (4069)                  /* ringbuffer»º³åÇø´óÐ¡ */
+#define RINGBUFFERSIZE      (4069)                  /* ringbuffer»º³åÇø´óÐ¡4KB */
 #define THRESHOLD           (RINGBUFFERSIZE / 2)    /* ringbuffer»º³åÇøãÐÖµ */
+#define MB_LEN              (4)
+#define MP_LEN              MB_LEN
+#define MP_BLOCK_SIZE       RT_ALIGN(sizeof(struct recvdata), sizeof(intptr_t))
 
 static rt_event_t recvdata_event;                   /* ÊÂ¼þ¼¯ */
 static rt_sem_t mqttinit_sem;                       /* ÐÅºÅÁ¿ */
+static rt_mailbox_t tmp_msg_mb;                     /* ÓÊÏä */
+static rt_mp_t tmp_msg_mp;                          /* ÄÚ´æ³Ø */
 static struct rt_ringbuffer *recvdatabuf;           /* ringbuffer */
 static rt_thread_t onenet_upload_data_thread;       /* onenetÉÏ´«Êý¾ÝµÄÏß³ÌµÄ¾ä±ú */
 static rt_thread_t onenet_mqtt_init_thread;         /* mqtt³õÊ¼»¯µÄÏß³ÌµÄ¾ä±ú */
@@ -46,6 +50,7 @@ struct recvdata                                     /* ¶¨ÒåÒ»¸ö½á¹¹Ìå´æ·Å½ÓÊÕµÄÊ
 static void nrf24l01_receive_entry(void *parameter)
 {
     struct recvdata buf;
+    struct recvdata *buf_mp;
     static char str_data[64];
     struct hal_nrf24l01_port_cfg halcfg;
     nrf24_cfg_t cfg;
@@ -77,6 +82,13 @@ static void nrf24l01_receive_entry(void *parameter)
             rt_ringbuffer_put(recvdatabuf, (rt_uint8_t *)str_data, strlen(str_data));
             /* ÊÕµ½Êý¾Ý£¬²¢½«Êý¾Ý´æ·Åµ½ringbufferÀïºó£¬²Å·¢ËÍÊÂ¼þ */
             rt_event_send(recvdata_event, WRITE_EVENT);
+            
+            /* ÉêÇëÒ»¿éÄÚ´æ ÒªÊÇÄÚ´æ³ØÂúÁË ¾Í¹ÒÆðµÈ´ý */
+            buf_mp = rt_mp_alloc(tmp_msg_mp, RT_WAITING_FOREVER);
+            buf_mp->timestamp = buf.timestamp;
+            buf_mp->temperature = buf.temperature;
+            rt_mb_send(tmp_msg_mb, (rt_ubase_t)buf_mp);
+            buf_mp = NULL;
         }
         rt_thread_mdelay(30);
     }
@@ -138,45 +150,42 @@ static void onenet_mqtt_init_entry(void *parameter)
 {
     uint8_t onenet_mqtt_init_failed_times;
     
-    while (1)
+    /* mqtt³õÊ¼»¯ */
+    while (onenet_mqtt_init())
     {
-        if (onenet_mqtt_init())
-        {
-            rt_thread_mdelay(100);
-            LOG_E("onenet mqtt init failed %d times", onenet_mqtt_init_failed_times++);
-        }
-        else
-        {
-            /* mqtt³õÊ¼»¯³É¹¦Ö®ºó£¬ÊÍ·ÅÐÅºÅÁ¿¸æÖªonenet_upload_data_threadÏß³Ì */
-            rt_sem_release(mqttinit_sem);
-            /* Í£Ö¹¸ÃÏß³Ì */
-            return;
-        }
+        rt_thread_mdelay(100);
+        LOG_E("onenet mqtt init failed %d times", onenet_mqtt_init_failed_times++);
     }
+    /* mqtt³õÊ¼»¯³É¹¦Ö®ºó£¬ÊÍ·ÅÐÅºÅÁ¿¸æÖªonenet_upload_data_threadÏß³Ì¿ÉÒÔÉÏ´«Êý¾ÝÁË */
+    rt_sem_release(mqttinit_sem);
 }
 
 static void onenet_upload_data_entry(void *parameter)
 {
-    int temp = 0;
+    struct recvdata *buf_mp;
     
     /* ÓÀ¾ÃµÈ´ý·½Ê½½ÓÊÕÐÅºÅÁ¿£¬ÈôÊÕ²»µ½£¬¸ÃÏß³Ì»áÒ»Ö±¹ÒÆð */
     rt_sem_take(mqttinit_sem, RT_WAITING_FOREVER);
-    /* É¾³ýonenet_mqtt_init_entryÏß³Ì£¬»ØÊÕÏµÍ³×ÊÔ´ */
-    rt_thread_delete(onenet_mqtt_init_thread);
+    /* ºóÃæÓÃ²»µ½Õâ¸öÐÅºÅÁ¿ÁË£¬°ÑËüÉ¾³ýÁË£¬»ØÊÕ×ÊÔ´ */
+    rt_sem_delete(mqttinit_sem);
     
     while (1)
     {
-        /* 500msÉÏ´«Ò»´ÎÊý¾Ý */
-        rt_thread_delay(rt_tick_from_millisecond(500));
-        /* ²âÊÔÓÃµÄËæ»úÊý */
-        temp = rand() % 100;
-        if (onenet_mqtt_upload_digit("temperature", temp) != RT_EOK)
+        if (rt_mb_recv(tmp_msg_mb, (rt_ubase_t*)&buf_mp, RT_WAITING_FOREVER) == RT_EOK)
         {
-            rt_kprintf("upload has an error, try again\n");
+            /* 500msÉÏ´«Ò»´ÎÊý¾Ý */
+            rt_thread_delay(rt_tick_from_millisecond(500));
+            if (onenet_mqtt_upload_digit("temperature", buf_mp->temperature) != RT_EOK)
+            {
+                rt_kprintf("upload has an error, try again\n");
+            }
+            else
+            {
+                rt_kprintf("onenet upload OK\n");
+            }
+            rt_mp_free(buf_mp); /* ÊÍ·ÅÄÚ´æ¿é */
+            buf_mp = RT_NULL;   /* ÇëÎñ±ØÒª×ö */
         }
-        else
-            rt_kprintf("onenet upload OK\n");
-            
     }
 }
 
@@ -197,12 +206,16 @@ int main(void)
 {
     rt_thread_t nrf24l01_thread, led_thread, DFS_thread;
     
-    mqttinit_sem = rt_sem_create("mqtt_sem0", RT_NULL, RT_IPC_FLAG_FIFO);
+    mqttinit_sem = rt_sem_create("mqtt_sem", RT_NULL, RT_IPC_FLAG_FIFO);
     RT_ASSERT(mqttinit_sem);
     recvdata_event = rt_event_create("temp_evt0", RT_IPC_FLAG_FIFO);
     RT_ASSERT(recvdata_event);
-    recvdatabuf = rt_ringbuffer_create(RINGBUFFERSIZE); /* ringbufferµÄ´óÐ¡ÊÇ4KB */
+    recvdatabuf = rt_ringbuffer_create(RINGBUFFERSIZE);
     RT_ASSERT(recvdatabuf);
+    tmp_msg_mb = rt_mb_create("temp_mb0", MB_LEN, RT_IPC_FLAG_FIFO);
+    RT_ASSERT(tmp_msg_mb);
+    tmp_msg_mp = rt_mp_create("temp_mp0", MP_LEN, MP_BLOCK_SIZE);
+    RT_ASSERT(tmp_msg_mp);
     
     nrf24l01_thread  = rt_thread_create("nrfrecv", nrf24l01_receive_entry, RT_NULL,
                                         1024, RT_THREAD_PRIORITY_MAX / 2, 20);
@@ -213,7 +226,7 @@ int main(void)
     
     DFS_thread = rt_thread_create("DFSsave", save_recv_data_entry, RT_NULL,
                                   1024, RT_THREAD_PRIORITY_MAX / 2 - 1, 20);
-    if (nrf24l01_thread != RT_NULL)
+    if (DFS_thread != RT_NULL)
     {
         rt_thread_startup(DFS_thread);
     }

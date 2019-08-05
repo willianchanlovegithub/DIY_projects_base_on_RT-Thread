@@ -157,7 +157,7 @@ int main(void)
     
     DFS_thread = rt_thread_create("DFSsave", save_recv_data_entry, RT_NULL,
                                   1024, RT_THREAD_PRIORITY_MAX / 2 - 1, 20);
-    if (nrf24l01_thread != RT_NULL)
+    if (DFS_thread != RT_NULL)
     {
         rt_thread_startup(DFS_thread);
     }
