@@ -249,7 +249,7 @@ static void onenet_upload_data_entry(void *parameter)
             /* 500ms上传一次数据 */
             rt_thread_delay(rt_tick_from_millisecond(500));
             
-            /* 上传发送节点1的数据到OneNet服务器，数据量名字是temperature_p0 */
+            /* 上传发送节点1的数据到OneNet服务器，数据流名字是temperature_p0 */
             if (onenet_mqtt_upload_digit("temperature_p0", buf_mp->temperature_p0) != RT_EOK)
             {
                 rt_kprintf("upload temperature_p0 has an error, try again\n");
@@ -259,7 +259,7 @@ static void onenet_upload_data_entry(void *parameter)
                 printf("onenet upload OK >>> temp_p0:%f\n", buf_mp->temperature_p0);
             }
             
-            /* 上传发送节点2的数据到OneNet服务器，数据量名字是temperature_p1 */
+            /* 上传发送节点2的数据到OneNet服务器，数据流名字是temperature_p1 */
             if (onenet_mqtt_upload_digit("temperature_p1", buf_mp->temperature_p1) != RT_EOK)
             {
                 rt_kprintf("upload temperature_p1 has an error, try again\n");
