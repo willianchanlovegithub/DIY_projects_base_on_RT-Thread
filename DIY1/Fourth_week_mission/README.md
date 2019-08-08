@@ -107,7 +107,7 @@ OneNet 软件包数据的上传和命令的接收是基于 MQTT 实现的，OneN
 
 ### 4.2 MQTT 初始化
 
-OneNet 软件包数据的上传和命令的接收是基于 MQTT 实现的，OneNet  的初始化其实就是 MQTT 客户端的初始化。OneNet 软件包提供了一个接口 `onenet_mqtt_init`，供用户去初始化 MQTT，只有当 MQTT 初始化成功之后，才能做后续的操作，如上传数据到 OneNet 服务器。
+了解了 OneNet 软件包的工作原理后，我们知道，OneNet 软件包数据的上传和命令的接收是基于 MQTT 实现的，OneNet  的初始化其实就是 MQTT 客户端的初始化。OneNet 软件包提供了一个接口 `onenet_mqtt_init`，供用户去初始化 MQTT，只有当 MQTT 初始化成功之后，才能做后续的操作，如上传数据到 OneNet 服务器。
 
 我们创建两个线程去工作，`onenet_mqtt_init_thread` 线程用于初始化 MQTT 客户端，`onenet_upload_data_thread` 线程去上传数据给云。那么问题来了，`onenet_upload_data_thread` 线程怎么知道 MQTT 初始化成功了呢？这里使用信号量去通知。
 
