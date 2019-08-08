@@ -215,7 +215,7 @@ static void onenet_upload_data_entry(void *parameter)
 
 就是这么简单。
 
-如果说，我们底下有多个发送节点采集温度，接收节点会收到多个发送节点的温度数据，而只有 一个 ESP8266，怎么在上传数据给 OneNet 的时候区分这些不同节点的数据？这里其实只需要建立不用的数据流就好了，每一个节点的数据为一个数据流，`rt_err_t onenet_mqtt_upload_digit(const char *ds_name, const double digit)` 函数的第一个参数就是数据流的名称，起不同名字就是不用的数据流了，如：
+如果说，我们底下有多个发送节点采集温度，接收节点会收到多个发送节点的温度数据，而只有 一个 ESP8266，怎么在上传数据给 OneNet 的时候区分这些不同节点的数据？这里其实只需要建立不同的数据流就好了，每一个节点的数据为一个数据流，`rt_err_t onenet_mqtt_upload_digit(const char *ds_name, const double digit)` 函数的第一个参数就是数据流的名称，起不同名字就是不用的数据流了，如：
 
 ```.c
 /* 上传发送节点1的数据到OneNet服务器，数据流名字是temperature_p0 */
