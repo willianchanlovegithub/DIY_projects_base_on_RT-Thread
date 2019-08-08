@@ -240,7 +240,7 @@ onenet_mqtt_upload_digit("temperature_p1", buf_mp->temperature_p1);
 
 获得更多官方技术支持，请添加 RT-Thread 小师妹为好友，备注`智能家居 DIY`，可拉进技术交流群。微信扫下方二维码添加好友：
 
-![board](figures\xiaoshimei.png)
+![board](figures/xiaoshimei.png)
 
 ## 7. 结果展示
 
