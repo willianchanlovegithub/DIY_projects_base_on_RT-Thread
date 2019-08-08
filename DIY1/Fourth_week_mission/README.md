@@ -2,19 +2,18 @@
 
 > 云乃万物互联之本
 
-Hi，各位小伙伴，DIY 活动已经来到了尾声，第四周的任务完成之后，也就意味着整个项目就完全做完啦，是不是迫不及待先把整个 DIY 做出来打造一个属于自己的智能家居温度监控系统呢？那就赶紧来看看最后的任务是如何完成的吧~
+Hi，各位小伙伴，DIY 活动已经来到了尾声，第四周的任务是整个项目中最有趣也是最重要的部分——物联网。本周的任务完成之后，也就意味着整个项目就完全做完啦，是不是迫不及待先把整个 DIY 做出来打造一个属于自己的智能家居温度监控系统呢？那就赶紧来看看最后的任务是如何完成的吧~
 
 ## 本文目录
 
 - 1. 第四周任务概览
 - 2. 准备工作
 - 3. 配置工程
-- 4. OneNet 软件包工作原理
-- 5. 开发思路
-- 6. 在 OneNet 中开发些简单的应用
-- 7. 开源代码
-- 8. 结果展示
-- 9. 注意事项
+- 4. 开发思路
+- 5. OneNet 应用开发
+- 6. 开源代码
+- 7. 结果展示
+- 8. 注意事项
 
 ## 1. 第四周任务概览
 
@@ -83,12 +82,16 @@ RT-Thread online packages  --->
 Hardware Drivers Config  --->
     On-chip Peripheral Drivers  --->
         [*] Enable UART  --->
-            [*] Enable UART2
+            [*] Enable UARTx
 ```
 
 在 menuconfig 中完成以上配置之后，先 `pkgs --update` 将软件包获取到本地，再 `scons --target=mdk5` 更新工程，将相关软件包加载到工程中来。
 
-## 4. OneNet 软件包工作原理
+## 4. 开发思路
+
+### 4.1 OneNet 软件包工作原理
+
+首先，我们需要大致了解一下 OneNet 软件包的工作原理。
 
 OneNet 软件包数据的上传和命令的接收是基于 MQTT 实现的，OneNet  的初始化其实就是 MQTT 客户端的初始化，初始化完成后，MQTT 客户端会自动连接 OneNet 平台。数据的上传其实就是往特定的 topic 发布消息。当服务器有命令或者响应需要下发时，会将消息推送给设备。
 
@@ -102,9 +105,7 @@ OneNet 软件包数据的上传和命令的接收是基于 MQTT 实现的，OneN
 
 ![board](figures/onenet_send_cmd.png)
 
-## 5. 开发思路
-
-### 5.1 MQTT 初始化
+### 4.2 MQTT 初始化
 
 OneNet 软件包数据的上传和命令的接收是基于 MQTT 实现的，OneNet  的初始化其实就是 MQTT 客户端的初始化。OneNet 软件包提供了一个接口 `onenet_mqtt_init`，供用户去初始化 MQTT，只有当 MQTT 初始化成功之后，才能做后续的操作，如上传数据到 OneNet 服务器。
 
@@ -146,14 +147,15 @@ static void onenet_upload_data_entry(void *parameter)
     
     while (1)
     {
-        /* 上传数据至OneNet */
+        /* 这里是上传数据到OneNet的代码*/
+        /* 这里要怎么写，后面会有教程说明 */
     }
 }
 ```
 
 在上面的代码中，其实不用信号量也能完成上述工作。这里创建两个线程，并且使用信号量去做通知工作，旨在能让大家多学习些 IPC 的使用。
 
-### 5.2 上传数据至云端
+### 4.3 上传数据至云端
 
 在 ESP8266 已经正常连上 WIFI 的前提下，MQTT 初始化成功后，就可以放心大胆的上传数据给 OneNet 了。OneNet 软件包给用户提供了几个上传数据的接口，详情请查看 OneNet 软件包的 API 说明文档：[点此处跳转](https://github.com/RT-Thread-packages/onenet/blob/master/docs/api.md)。这个 DIY 项目中需要上传的数据是温度数据，属于数字数据，可以使用下面这个 API：
 
@@ -224,15 +226,23 @@ onenet_mqtt_upload_digit("temperature_p1", buf_mp->temperature_p1);
 
 
 
-## 6. 在 OneNet 中开发些简单的应用
+## 5. OneNet 应用开发
 
-请查看 OneNet 的产品创建与设备接入视频教程：[点此处跳转](https://www.rt-thread.org/document/site/tutorial/qemu-network/onenet/onenet/)。
+我们关把数据上传给 OneNet 后，如何才能看到这些数据呢？OneNet 给开发者提供了一些简单应用开发的工具，我们利用这些工具在 OneNet 上创建一些简单的小应用，即可实现对数据的远程监控了。
 
-## 7. 开源代码
+![board](figures/makeapp.png)
 
-为了更进一步便于大家学习，第四周任务的代码已经开源啦~ [请点击这里查看](https://github.com/willianchanlovegithub/DIY_projects_base_on_RT-Thread)。
+由于文章篇幅有限，这里就不详细展示如何制作应用了，更多内容，请查看 OneNet 的产品创建与设备接入视频教程：[点此处跳转](https://www.rt-thread.org/document/site/tutorial/qemu-network/onenet/onenet/)。
 
-## 8. 结果展示
+## 6. 开源代码
+
+为了更进一步便于大家学习，第四周任务的代码已经开源啦~ [请点击这里查看](https://github.com/willianchanlovegithub/DIY_projects_base_on_RT-Thread)。请给这个项目点个小星星(Star)^_^
+
+获得更多官方技术支持，请添加 RT-Thread 小师妹为好友，备注`智能家居 DIY`，可拉进技术交流群。微信扫下方二维码添加好友：
+
+![board](figures\xiaoshimei.png)
+
+## 7. 结果展示
 
 - 在网页上查看 OneNet 云端数据，能正常收到来自每个发送节点数据流了： 
 
@@ -250,7 +260,7 @@ onenet_mqtt_upload_digit("temperature_p1", buf_mp->temperature_p1);
 
 ![board](figures/onenetuploadok.png)
 
-## 9. 注意事项
+## 8. 注意事项
 
 - 第四周的 demo 工程只接收两个发送节点的数据，需要更多发送节点的可以自行添加。
 - 第四周的 demo 工程中的 `RECEIVE(stm32l475-atk-pandora)(SD_Card)(ESP8266)` 是利用 ESP8266 对接 OneNet 的，使用 SD Card 挂载文件系统。

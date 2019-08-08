@@ -110,8 +110,9 @@ static void nrf24l01_receive_entry(void *parameter)
             buf_mp->temperature_p1 = buf.temperature_p1;
             rt_mb_send(tmp_msg_mb, (rt_ubase_t)buf_mp);
             buf_mp = NULL;
+            
+            rt_thread_mdelay(500);
         }
-        rt_thread_mdelay(500);
     }
 }
 
@@ -224,13 +225,17 @@ static void onenet_mqtt_init_entry(void *parameter)
     uint8_t onenet_mqtt_init_failed_times;
     
     /* mqtt初始化 */
-    while (onenet_mqtt_init())
+    while (1)
     {
+        if (!onenet_mqtt_init())
+        {
+            /* mqtt初始化成功之后，释放信号量告知onenet_upload_data_thread线程可以上传数据了 */
+            rt_sem_release(mqttinit_sem);
+            return;
+        }
         rt_thread_mdelay(100);
         LOG_E("onenet mqtt init failed %d times", onenet_mqtt_init_failed_times++);
     }
-    /* mqtt初始化成功之后，释放信号量告知onenet_upload_data_thread线程可以上传数据了 */
-    rt_sem_release(mqttinit_sem);
 }
 
 static void onenet_upload_data_entry(void *parameter)
@@ -244,11 +249,11 @@ static void onenet_upload_data_entry(void *parameter)
     
     while (1)
     {
+        /* 500ms上传一次数据 */
+        rt_thread_delay(rt_tick_from_millisecond(500));
+        
         if (rt_mb_recv(tmp_msg_mb, (rt_ubase_t*)&buf_mp, RT_WAITING_FOREVER) == RT_EOK)
         {
-            /* 500ms上传一次数据 */
-            rt_thread_delay(rt_tick_from_millisecond(500));
-            
             /* 上传发送节点1的数据到OneNet服务器，数据流名字是temperature_p0 */
             if (onenet_mqtt_upload_digit("temperature_p0", buf_mp->temperature_p0) != RT_EOK)
             {
@@ -307,6 +312,20 @@ int main(void)
     tmp_msg_mp = rt_mp_create("temp_mp0", MP_LEN, MP_BLOCK_SIZE);
     RT_ASSERT(tmp_msg_mp);
     
+    onenet_mqtt_init_thread = rt_thread_create("mqttinit", onenet_mqtt_init_entry, RT_NULL,
+                                               1024, RT_THREAD_PRIORITY_MAX / 2 - 2, 20);
+    if (onenet_mqtt_init_thread != RT_NULL)
+    {
+        rt_thread_startup(onenet_mqtt_init_thread);
+    }
+    
+    onenet_upload_data_thread = rt_thread_create("uploaddata", onenet_upload_data_entry, RT_NULL,
+                                                 1024, RT_THREAD_PRIORITY_MAX / 2 - 2, 20);
+    if (onenet_upload_data_thread != RT_NULL)
+    {
+        rt_thread_startup(onenet_upload_data_thread);
+    }
+    
     nrf24l01_thread  = rt_thread_create("nrfrecv", nrf24l01_receive_entry, RT_NULL,
                                         1024, RT_THREAD_PRIORITY_MAX / 2, 20);
     if (nrf24l01_thread != RT_NULL)
@@ -326,20 +345,6 @@ int main(void)
     if (DFS_thread_p1 != RT_NULL)
     {
         rt_thread_startup(DFS_thread_p1);
-    }
-    
-    onenet_mqtt_init_thread = rt_thread_create("mqttinit", onenet_mqtt_init_entry, RT_NULL,
-                                               1024, RT_THREAD_PRIORITY_MAX / 2 - 2, 20);
-    if (onenet_mqtt_init_thread != RT_NULL)
-    {
-        rt_thread_startup(onenet_mqtt_init_thread);
-    }
-    
-    onenet_upload_data_thread = rt_thread_create("uploaddata", onenet_upload_data_entry, RT_NULL,
-                                                 1024, RT_THREAD_PRIORITY_MAX / 2 - 2, 20);
-    if (onenet_upload_data_thread != RT_NULL)
-    {
-        rt_thread_startup(onenet_upload_data_thread);
     }
 
     /* 一个毫无存在感的线程 */
