@@ -42,7 +42,7 @@ static void nrf24l01_receive_entry(void *parameter)
 
     while (1)
     {
-        rt_thread_mdelay(90);
+        rt_thread_mdelay(500);
         
         if (!rx_pipe_num_choose())
         {

@@ -70,7 +70,7 @@ static void nrf24l01_receive_entry(void *parameter)
             /* 收到数据，并将数据存放到ringbuffer里后，才发送事件 */
             rt_event_send(recvdata_event, WRITE_EVENT);
         }
-        rt_thread_mdelay(30);
+        rt_thread_mdelay(500);
     }
 }
 
