@@ -74,48 +74,41 @@ static void nrf24l01_receive_entry(void *parameter)
         if (!rx_pipe_num_choose())
         {
             /* 通过sscnaf解析收到的发送节点1的数据 */
-            if (sscanf((char *)RxBuf_P0, "%d,+%f", &buf.timestamp_p0, &buf.temperature_p0) == 2 && buf.timestamp_p0 != 0)
+            if (sscanf((char *)RxBuf_P0, "%d,+%f", &buf.timestamp_p0, &buf.temperature_p0) != 2)
             {
-                buf.temperature_p0 = +buf.temperature_p0;
-                sprintf(str_data_p0, "%d,%f\n", buf.timestamp_p0, buf.temperature_p0);
-                /* 将数据存放到ringbuffer里 */
-                rt_ringbuffer_put(recvdatabuf_p0, (rt_uint8_t *)str_data_p0, strlen(str_data_p0));
-                /* 收到数据，并将数据存放到ringbuffer里后，才发送事件 */
-                rt_event_send(recvdata_event, WRITE_EVENT_P0);
+								if (sscanf((char *)RxBuf_P0, "%d,-%f", &buf.timestamp_p0, &buf.temperature_p0) != 2)
+								{
+										buf.temperature_p0 = 0;
+										buf.timestamp_p0 = 0;
+								}
+								buf.temperature_p0 = -buf.temperature_p0;
             }
-            else if (sscanf((char *)RxBuf_P0, "%d,-%f", &buf.timestamp_p0, &buf.temperature_p0) == 2 && buf.timestamp_p0 != 0)
-            {
-                buf.temperature_p0 = -buf.temperature_p0;
-                sprintf(str_data_p0, "%d,%f\n", buf.timestamp_p0, buf.temperature_p0);
-                rt_ringbuffer_put(recvdatabuf_p0, (rt_uint8_t *)str_data_p0, strlen(str_data_p0));
-                rt_event_send(recvdata_event, WRITE_EVENT_P0);
-            }
-            else
-            {
-                buf.temperature_p0 = 0;
-                buf.timestamp_p0 = 0;
-            }
+						if (0 != buf.timestamp_p0)
+						{
+								sprintf(str_data_p0, "%d,%f\n", buf.timestamp_p0, buf.temperature_p0);
+								/* 将数据存放到ringbuffer里 */
+								rt_ringbuffer_put(recvdatabuf_p0, (rt_uint8_t *)str_data_p0, strlen(str_data_p0));
+								/* 收到数据，并将数据存放到ringbuffer里后，才发送事件 */
+								rt_event_send(recvdata_event, WRITE_EVENT_P0);
+						}
 
             /* 通过sscnaf解析收到的发送节点2的数据 */
-            if (sscanf((char *)RxBuf_P1, "%d,+%f", &buf.timestamp_p1, &buf.temperature_p1) == 2 && buf.timestamp_p1 != 0)
+            if (sscanf((char *)RxBuf_P1, "%d,+%f", &buf.timestamp_p1, &buf.temperature_p1) != 2)
             {
-                buf.temperature_p1 = +buf.temperature_p1;
+								if (sscanf((char *)RxBuf_P1, "%d,-%f", &buf.timestamp_p1, &buf.temperature_p1) != 2)
+								{
+										buf.temperature_p1 = 0;
+										buf.timestamp_p1 = 0;								
+								}
+								buf.temperature_p1 = -buf.temperature_p1;
+            }
+						if (0 != buf.timestamp_p1)
+						{
                 sprintf(str_data_p1, "%d,%f\n", buf.timestamp_p1, buf.temperature_p1);
                 rt_ringbuffer_put(recvdatabuf_p1, (rt_uint8_t *)str_data_p1, strlen(str_data_p1));
-                rt_event_send(recvdata_event, WRITE_EVENT_P1);
-            }
-            else if (sscanf((char *)RxBuf_P1, "%d,-%f", &buf.timestamp_p1, &buf.temperature_p1) == 2 && buf.timestamp_p1 != 0)
-            {
-                buf.temperature_p1 = -buf.temperature_p1;
-                sprintf(str_data_p1, "%d,%f\n", buf.timestamp_p1, buf.temperature_p1);
-                rt_ringbuffer_put(recvdatabuf_p1, (rt_uint8_t *)str_data_p1, strlen(str_data_p1));
-                rt_event_send(recvdata_event, WRITE_EVENT_P1);
-            }
-            else
-            {
-                buf.temperature_p1 = 0;
-                buf.timestamp_p1 = 0;
-            }
+                rt_event_send(recvdata_event, WRITE_EVENT_P1);						
+						}
+
 
 //            /* 清空nrf24l01接收缓冲区RxBuf_Px */
 //            memset(RxBuf_P0, 0, sizeof(RxBuf_P0));
