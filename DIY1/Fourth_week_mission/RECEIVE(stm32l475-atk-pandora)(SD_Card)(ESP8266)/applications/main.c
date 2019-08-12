@@ -109,11 +109,6 @@ static void nrf24l01_receive_entry(void *parameter)
                 rt_event_send(recvdata_event, WRITE_EVENT_P1);
             }
 
-
-//            /* 清空nrf24l01接收缓冲区RxBuf_Px */
-//            memset(RxBuf_P0, 0, sizeof(RxBuf_P0));
-//            memset(RxBuf_P1, 0, sizeof(RxBuf_P1));
-
             /* 申请一块内存 要是内存池满了 就挂起等待 */
             buf_mp = rt_mp_alloc(tmp_msg_mp, RT_WAITING_FOREVER);
             buf_mp->timestamp_p0 = buf.timestamp_p0;
