@@ -74,34 +74,53 @@ static void nrf24l01_receive_entry(void *parameter)
         if (!rx_pipe_num_choose())
         {
             /* 通过sscnaf解析收到的发送节点1的数据 */
-            if(sscanf((char *)RxBuf_P0, "%d,+%f", &buf.timestamp_p0, &buf.temperature_p0) != 2)
+            if (sscanf((char *)RxBuf_P0, "%d,+%f", &buf.timestamp_p0, &buf.temperature_p0) == 2 && buf.timestamp_p0 != 0)
             {
-                /* 通过sscnaf解析收到的发送节点1数据 */
-                if(sscanf((char *)RxBuf_P0, "%d,-%f", &buf.timestamp_p0, &buf.temperature_p0) != 2)
-                {
-                    continue;
-                }
+                buf.temperature_p0 = +buf.temperature_p0;
+                sprintf(str_data_p0, "%d,%f\n", buf.timestamp_p0, buf.temperature_p0);
+                /* 将数据存放到ringbuffer里 */
+                rt_ringbuffer_put(recvdatabuf_p0, (rt_uint8_t *)str_data_p0, strlen(str_data_p0));
+                /* 收到数据，并将数据存放到ringbuffer里后，才发送事件 */
+                rt_event_send(recvdata_event, WRITE_EVENT_P0);
+            }
+            else if (sscanf((char *)RxBuf_P0, "%d,-%f", &buf.timestamp_p0, &buf.temperature_p0) == 2 && buf.timestamp_p0 != 0)
+            {
                 buf.temperature_p0 = -buf.temperature_p0;
+                sprintf(str_data_p0, "%d,%f\n", buf.timestamp_p0, buf.temperature_p0);
+                rt_ringbuffer_put(recvdatabuf_p0, (rt_uint8_t *)str_data_p0, strlen(str_data_p0));
+                rt_event_send(recvdata_event, WRITE_EVENT_P0);
             }
-            sprintf(str_data_p0, "%d,%f\n", buf.timestamp_p0, buf.temperature_p0);
-            /* 通过sscnaf解析收到的发送节点2的数据 */
-            if(sscanf((char *)RxBuf_P1, "%d,+%f", &buf.timestamp_p1, &buf.temperature_p1) != 2)
+            else
             {
-                /* 通过sscnaf解析收到的发送节点2的数据 */
-                if(sscanf((char *)RxBuf_P1, "%d,-%f", &buf.timestamp_p1, &buf.temperature_p1) != 2)
-                {
-                    continue;
-                }
-                buf.temperature_p1 = -buf.temperature_p1;
+                buf.temperature_p0 = 0;
+                buf.timestamp_p0 = 0;
             }
-            sprintf(str_data_p1, "%d,%f\n", buf.timestamp_p1, buf.temperature_p1);
-            /* 将数据存放到ringbuffer里 */
-            rt_ringbuffer_put(recvdatabuf_p0, (rt_uint8_t *)str_data_p0, strlen(str_data_p0));
-            rt_ringbuffer_put(recvdatabuf_p1, (rt_uint8_t *)str_data_p1, strlen(str_data_p1));
-            /* 收到数据，并将数据存放到ringbuffer里后，才发送事件 */
-            rt_event_send(recvdata_event, WRITE_EVENT_P0);
-            rt_event_send(recvdata_event, WRITE_EVENT_P1);
-            
+
+            /* 通过sscnaf解析收到的发送节点2的数据 */
+            if (sscanf((char *)RxBuf_P1, "%d,+%f", &buf.timestamp_p1, &buf.temperature_p1) == 2 && buf.timestamp_p1 != 0)
+            {
+                buf.temperature_p1 = +buf.temperature_p1;
+                sprintf(str_data_p1, "%d,%f\n", buf.timestamp_p1, buf.temperature_p1);
+                rt_ringbuffer_put(recvdatabuf_p1, (rt_uint8_t *)str_data_p1, strlen(str_data_p1));
+                rt_event_send(recvdata_event, WRITE_EVENT_P1);
+            }
+            else if (sscanf((char *)RxBuf_P1, "%d,-%f", &buf.timestamp_p1, &buf.temperature_p1) == 2 && buf.timestamp_p1 != 0)
+            {
+                buf.temperature_p1 = -buf.temperature_p1;
+                sprintf(str_data_p1, "%d,%f\n", buf.timestamp_p1, buf.temperature_p1);
+                rt_ringbuffer_put(recvdatabuf_p1, (rt_uint8_t *)str_data_p1, strlen(str_data_p1));
+                rt_event_send(recvdata_event, WRITE_EVENT_P1);
+            }
+            else
+            {
+                buf.temperature_p1 = 0;
+                buf.timestamp_p1 = 0;
+            }
+
+//            /* 清空nrf24l01接收缓冲区RxBuf_Px */
+//            memset(RxBuf_P0, 0, sizeof(RxBuf_P0));
+//            memset(RxBuf_P1, 0, sizeof(RxBuf_P1));
+
             /* 申请一块内存 要是内存池满了 就挂起等待 */
             buf_mp = rt_mp_alloc(tmp_msg_mp, RT_WAITING_FOREVER);
             buf_mp->timestamp_p0 = buf.timestamp_p0;
@@ -110,9 +129,8 @@ static void nrf24l01_receive_entry(void *parameter)
             buf_mp->temperature_p1 = buf.temperature_p1;
             rt_mb_send(tmp_msg_mb, (rt_ubase_t)buf_mp);
             buf_mp = NULL;
-            
-            rt_thread_mdelay(500);
         }
+        rt_thread_mdelay(200);
     }
 }
 
@@ -129,42 +147,38 @@ static void save_recv_p0_data_entry(void *parameter)
         {
             continue;
         }
-        
-        do
+        /* 接收感兴趣的事件WRITE_EVENT_P0，以1000ms超时方式接收 */
+        if (rt_event_recv(recvdata_event, WRITE_EVENT_P0, RT_EVENT_FLAG_OR | RT_EVENT_FLAG_CLEAR, rt_tick_from_millisecond(1000), &set) == RT_EOK)
         {
-            /* 接收感兴趣的事件WRITE_EVENT_P0，以1000ms超时方式接收 */
-            if (rt_event_recv(recvdata_event, WRITE_EVENT_P0, RT_EVENT_FLAG_OR | RT_EVENT_FLAG_CLEAR, rt_tick_from_millisecond(1000), &set) == RT_EOK)
+            /* 判断写入的数据大小到没到所设置的ringbuffer的阈值 */
+            if (rt_ringbuffer_data_len(recvdatabuf_p0) > THRESHOLD)
             {
-                /* 判断写入的数据大小到没到所设置的ringbuffer的阈值 */
-                if (rt_ringbuffer_data_len(recvdatabuf_p0) > THRESHOLD)
+                /* 到阈值就直接写数据 */
+                recvdatafile_p0 = fopen("recvdata_p0.csv", "ab+");
+                if (recvdatafile_p0 != RT_NULL)
                 {
-                    /* 到阈值就直接写数据 */
-                    recvdatafile_p0 = fopen("recvdata_p0.csv", "ab+");
-                    if (recvdatafile_p0 != RT_NULL)
+                    while (rt_ringbuffer_data_len(recvdatabuf_p0))
                     {
-                        while(rt_ringbuffer_data_len(recvdatabuf_p0))
-                        {
-                            size = rt_ringbuffer_get(recvdatabuf_p0, (rt_uint8_t *)writebuffer, THRESHOLD);
-                            fwrite(writebuffer, 1, size, recvdatafile_p0);
-                        }
-                        fclose(recvdatafile_p0);
+                        size = rt_ringbuffer_get(recvdatabuf_p0, (rt_uint8_t *)writebuffer, THRESHOLD);
+                        fwrite(writebuffer, 1, size, recvdatafile_p0);
                     }
+                    fclose(recvdatafile_p0);
                 }
-                /* 阈值没到就继续接收感兴趣的事件WRITE_EVENT_P0，以1000ms超时方式接收 */
-                continue;
             }
-            /* 1000ms到了，还没有收到感兴趣的事件，这时候不管到没到阈值，直接写 */
-            recvdatafile_p0 = fopen("recvdata_p0.csv", "ab+");
-            if (recvdatafile_p0 != RT_NULL)
+            /* 阈值没到就继续接收感兴趣的事件WRITE_EVENT_P0，以1000ms超时方式接收 */
+            continue;
+        }
+        /* 1000ms到了，还没有收到感兴趣的事件，这时候不管到没到阈值，直接写 */
+        recvdatafile_p0 = fopen("recvdata_p0.csv", "ab+");
+        if (recvdatafile_p0 != RT_NULL)
+        {
+            while (rt_ringbuffer_data_len(recvdatabuf_p0))
             {
-                while(rt_ringbuffer_data_len(recvdatabuf_p0))
-                {
-                    size = rt_ringbuffer_get(recvdatabuf_p0, (rt_uint8_t *)writebuffer, THRESHOLD);
-                    fwrite(writebuffer, 1, size, recvdatafile_p0);
-                }
-                fclose(recvdatafile_p0);
+                size = rt_ringbuffer_get(recvdatabuf_p0, (rt_uint8_t *)writebuffer, THRESHOLD);
+                fwrite(writebuffer, 1, size, recvdatafile_p0);
             }
-        } while (0);
+            fclose(recvdatafile_p0);
+        }
     }
 }
 
@@ -181,42 +195,38 @@ static void save_recv_p1_data_entry(void *parameter)
         {
             continue;
         }
-        
-        do
+        /* 接收感兴趣的事件WRITE_EVENT_P1，以1000ms超时方式接收 */
+        if (rt_event_recv(recvdata_event, WRITE_EVENT_P1, RT_EVENT_FLAG_OR | RT_EVENT_FLAG_CLEAR, rt_tick_from_millisecond(1000), &set) == RT_EOK)
         {
-            /* 接收感兴趣的事件WRITE_EVENT_P1，以1000ms超时方式接收 */
-            if (rt_event_recv(recvdata_event, WRITE_EVENT_P1, RT_EVENT_FLAG_OR | RT_EVENT_FLAG_CLEAR, rt_tick_from_millisecond(1000), &set) == RT_EOK)
+            /* 判断写入的数据大小到没到所设置的ringbuffer的阈值 */
+            if (rt_ringbuffer_data_len(recvdatabuf_p1) > THRESHOLD)
             {
-                /* 判断写入的数据大小到没到所设置的ringbuffer的阈值 */
-                if (rt_ringbuffer_data_len(recvdatabuf_p1) > THRESHOLD)
+                /* 到阈值就直接写数据 */
+                recvdatafile_p1 = fopen("recvdata_p1.csv", "ab+");
+                if (recvdatafile_p1 != RT_NULL)
                 {
-                    /* 到阈值就直接写数据 */
-                    recvdatafile_p1 = fopen("recvdata_p1.csv", "ab+");
-                    if (recvdatafile_p1 != RT_NULL)
+                    while (rt_ringbuffer_data_len(recvdatabuf_p1))
                     {
-                        while(rt_ringbuffer_data_len(recvdatabuf_p1))
-                        {
-                            size = rt_ringbuffer_get(recvdatabuf_p1, (rt_uint8_t *)writebuffer, THRESHOLD);
-                            fwrite(writebuffer, 1, size, recvdatafile_p1);
-                        }
-                        fclose(recvdatafile_p1);
+                        size = rt_ringbuffer_get(recvdatabuf_p1, (rt_uint8_t *)writebuffer, THRESHOLD);
+                        fwrite(writebuffer, 1, size, recvdatafile_p1);
                     }
+                    fclose(recvdatafile_p1);
                 }
-                /* 阈值没到就继续接收感兴趣的事件WRITE_EVENT_P1，以1000ms超时方式接收 */
-                continue;
             }
-            /* 1000ms到了，还没有收到感兴趣的事件，这时候不管到没到阈值，直接写 */
-            recvdatafile_p1 = fopen("recvdata_p1.csv", "ab+");
-            if (recvdatafile_p1 != RT_NULL)
+            /* 阈值没到就继续接收感兴趣的事件WRITE_EVENT_P1，以1000ms超时方式接收 */
+            continue;
+        }
+        /* 1000ms到了，还没有收到感兴趣的事件，这时候不管到没到阈值，直接写 */
+        recvdatafile_p1 = fopen("recvdata_p1.csv", "ab+");
+        if (recvdatafile_p1 != RT_NULL)
+        {
+            while (rt_ringbuffer_data_len(recvdatabuf_p1))
             {
-                while(rt_ringbuffer_data_len(recvdatabuf_p1))
-                {
-                    size = rt_ringbuffer_get(recvdatabuf_p1, (rt_uint8_t *)writebuffer, THRESHOLD);
-                    fwrite(writebuffer, 1, size, recvdatafile_p1);
-                }
-                fclose(recvdatafile_p1);
+                size = rt_ringbuffer_get(recvdatabuf_p1, (rt_uint8_t *)writebuffer, THRESHOLD);
+                fwrite(writebuffer, 1, size, recvdatafile_p1);
             }
-        } while (0);
+            fclose(recvdatafile_p1);
+        }
     }
 }
 

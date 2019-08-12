@@ -125,13 +125,17 @@ static void onenet_mqtt_init_entry(void *parameter)
     uint8_t onenet_mqtt_init_failed_times;
     
     /* mqtt初始化 */
-    while (onenet_mqtt_init())
+    while (1)
     {
+        if (!onenet_mqtt_init())
+        {
+            /* mqtt初始化成功之后，释放信号量告知onenet_upload_data_thread线程可以上传数据了 */
+            rt_sem_release(mqttinit_sem);
+            return;
+        }
         rt_thread_mdelay(100);
         LOG_E("onenet mqtt init failed %d times", onenet_mqtt_init_failed_times++);
     }
-    /* mqtt初始化成功之后，释放信号量告知onenet_upload_data_thread线程可以上传数据了 */
-    rt_sem_release(mqttinit_sem);
 }
 ```
 
