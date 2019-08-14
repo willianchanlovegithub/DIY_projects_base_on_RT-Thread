@@ -105,7 +105,7 @@ static void nrf24l01_send_entry(void *parameter)
             }
             else
             {
-                rt_sprintf((char *)tbuf, "%d,-%2d.%d", msg.timestamp, msg.int_value / 10, msg.int_value % 10);
+                rt_sprintf((char *)tbuf, "%d,-%2d.%d", msg.timestamp, -msg.int_value / 10, -msg.int_value % 10);
             }
             rt_kputs((char *)tbuf);
             rt_kputs("\n");
