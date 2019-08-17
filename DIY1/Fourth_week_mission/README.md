@@ -172,7 +172,7 @@ rt_err_t onenet_mqtt_upload_digit(const char *ds_name, const double digit);
 | **参数** | **描述**       |
 | -------- | -------------- |
 | ds_name  | 数据流名称     |
-| str      | 要上传的字符串 |
+| digit    | 要上传的数字 |
 | **返回** | **--**         |
 | 0        | 上传成功       |
 | -5       | 内存不足       |
